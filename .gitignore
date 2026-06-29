@@ -1,0 +1,30 @@
+# Model weights
+**/*.pt
+
+# Optuna SQLite databases
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+
+# Dataset files (downloaded separately via scripts/download_data.py)
+data/*.csv
+data/*.csv.gz
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
