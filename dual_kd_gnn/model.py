@@ -187,13 +187,11 @@ class InteractionTensorHead(nn.Module):
                 )
                 self.assignment_logits_v = nn.Parameter(torch.zeros(num_classes, self.num_prototypes))
                 nn.init.normal_(self.assignment_logits_v, std=1.0)
-        else:
-            if self.use_low_rank:
-                self.U = nn.Parameter(torch.randn(num_classes, effective_dim, rank) * 0.01)
-                if not symmetric:
-                    self.V = nn.Parameter(torch.randn(num_classes, effective_dim, rank) * 0.01)
-            else:
-                self.A = nn.Parameter(torch.randn(num_classes, effective_dim, effective_dim) * 0.01)
+        elif self.use_low_rank:
+            self.U = nn.Parameter(torch.randn(num_classes, effective_dim, rank) * 0.01)
+            if not symmetric:
+                self.V = nn.Parameter(torch.randn(num_classes, effective_dim, rank) * 0.01)
+        # rank=0 and no codebook → pure linear head; no extra parameters needed
 
         self.linear_residual = nn.Linear(effective_dim, num_classes, bias=False)
         if use_bias:
@@ -270,8 +268,8 @@ class InteractionTensorHead(nn.Module):
                 z_v = torch.einsum("bd,kdr->bkr", z, self.V)
                 logits = (z_u * z_v).sum(dim=-1)
         else:
-            az = torch.einsum("kdf,bf->bkd", self.A, z)
-            logits = (z.unsqueeze(1) * az).sum(dim=-1)
+            # rank=0: pure linear head — quadratic term is zero, only linear_residual contributes
+            logits = z.new_zeros(z.size(0), self.num_classes)
         logits = logits + self.linear_residual(z)
         if self.bias is not None:
             logits = logits + self.bias
@@ -334,12 +332,14 @@ class DoubleGCNTransformerModel(nn.Module):
         ih_codebook_init: str = "orthogonal",
         ih_topk: int = 2,
         info_nce_temperature: float = 0.2,
+        zero_phys_branch: bool = False,
     ) -> None:
         super().__init__()
         self.d_model = gnn_hidden
         self.ih_tau_init = float(ih_tau_init)
         self.ih_tau_final = float(ih_tau_final)
         self.info_nce_temperature = float(info_nce_temperature)
+        self.zero_phys_branch = bool(zero_phys_branch)
 
         self.gnn_c = GNNEncoder(chem_dim, edge_dim, gnn_hidden, gnn_layers, gnn_dropout)
         self.gnn_p = GNNEncoder(phys_dim, edge_dim, gnn_hidden, gnn_layers, gnn_dropout)
@@ -482,7 +482,8 @@ class DoubleGCNTransformerModel(nn.Module):
 
     def _run_student_gcn(self, data):
         chem_nodes = self.gnn_c(data.x_chem, data.edge_index, data.edge_attr, data.batch)
-        phys_nodes = self.gnn_p(data.x_phys, data.edge_index, data.edge_attr, data.batch)
+        x_phys = torch.zeros_like(data.x_phys) if self.zero_phys_branch else data.x_phys
+        phys_nodes = self.gnn_p(x_phys, data.edge_index, data.edge_attr, data.batch)
         return chem_nodes, phys_nodes
 
     @torch.no_grad()
@@ -501,7 +502,8 @@ class DoubleGCNTransformerModel(nn.Module):
     def _run_teacher_gcn(self, data):
         self.set_teacher_eval()
         chem_nodes = self.teacher_gnn_c(data.x_chem, data.edge_index, data.edge_attr, data.batch)
-        phys_nodes = self.teacher_gnn_p(data.x_phys, data.edge_index, data.edge_attr, data.batch)
+        x_phys = torch.zeros_like(data.x_phys) if self.zero_phys_branch else data.x_phys
+        phys_nodes = self.teacher_gnn_p(x_phys, data.edge_index, data.edge_attr, data.batch)
         return chem_nodes, phys_nodes
 
     def _pad_dual_sequences(self, chem_nodes: torch.Tensor, phys_nodes: torch.Tensor, batch: torch.Tensor):

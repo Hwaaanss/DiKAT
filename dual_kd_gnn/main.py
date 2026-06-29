@@ -34,6 +34,7 @@ MODEL_KWARG_NAMES = [
     "ih_codebook_init",
     "ih_topk",
     "info_nce_temperature",
+    "zero_phys_branch",
 ]
 HPARAM_NAMES = [
     "batch_size",
@@ -107,6 +108,13 @@ def add_dual_model_arguments(parser) -> None:
         default=None,
         help="Temperature for cross-modal InfoNCE distillation (graph-level CLIP-style).",
     )
+    parser.add_argument(
+        "--no-phys-branch",
+        dest="zero_phys_branch",
+        action="store_true",
+        default=False,
+        help="Ablation A1: zero out physical node features (x_phys=0), disabling the 3D physical branch.",
+    )
 
 
 def collect_dual_model_kwargs(args) -> dict[str, object]:
@@ -134,7 +142,7 @@ def collect_dual_hparam_overrides(args) -> dict[str, object]:
 
 
 MODEL_SPEC = ModelSpec(
-    name="Double_GCN_Transformer",
+    name="dual_distillation",
     slug="dual_kd_gnn",
     uses_dual_features=True,
     builder=lambda num_classes, **model_kwargs: DoubleGCNTransformerModel(

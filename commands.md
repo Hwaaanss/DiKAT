@@ -137,6 +137,148 @@ Outputs: `all_metrics.csv`, `results_table.csv`, `results_table.md`,
 
 ---
 
+---
+
+## 6. Multi-seed runs (mean ± std AUROC)
+
+JCIM reviewers typically reject single-seed results. Use `--seeds` to run N seeds
+and print **mean ± std** automatically. Per-seed artifacts land in
+`dual_kd_gnn/runs/<dataset>_seed<N>/`.
+
+```bash
+# Single dataset, 5 seeds
+python dual_kd_gnn/main.py --dataset bbbp --seeds 42 0 1 2 3
+
+# Batch benchmark, 5 seeds
+python main.py --seeds 42 0 1 2 3
+
+# Subset of datasets, 3 seeds
+python main.py --datasets bace bbbp tox21 --seeds 42 0 1
+```
+
+`--seeds` overrides `--seed`. When a single value is provided the behaviour is
+identical to `--seed`.
+
+---
+
+## 7. Ablation experiments (JCIM)
+
+All five ablations are single-flag changes on top of the normal training command.
+**Ablation results are saved separately** under `ablation/runs/<name>/` and never
+overwrite the main `dual_kd_gnn/runs/` artifacts.
+
+`--ablation-name` is **required** to route results to the ablation directory.
+Without it the command behaves identically to a normal training run.
+
+| ID | Claim verified | Extra flag(s) | Suggested `--ablation-name` |
+|----|---------------|---------------|-----------------------------|
+| A1 | 3D physical features contribute | `--no-phys-branch` | `a1_no_phys` |
+| A2 | Cross-modal InfoNCE (λ₂) contributes | `--cross-distill-weight 0` | `a2_no_infonce` |
+| A3 | Intra-modal MSE KD (λ₁) contributes | `--distill-weight 0` | `a3_no_mse_kd` |
+| A4 | Shared codebook (U_k) contributes | `--ih-num-prototypes 0` | `a4_no_codebook` |
+| A5 | Interaction tensor head (ITH) contributes | `--ih-rank 0` | `a5_linear_head` |
+
+Each run directory (`ablation/runs/<name>/<dataset>/`) contains:
+- `metrics.json` — `test_roc_auc`, `best_val_auc`, `seed`, `ablation_name`,
+  `ablation_settings` (all key flags and their values)
+- `run_metadata.json` — full hparams and model_kwargs
+- `training_log.csv`, `training_curves.png`, `model_weights.pt`
+
+### A1 — No physical branch (x_phys = zeros)
+
+```bash
+python dual_kd_gnn/main.py --dataset bbbp \
+    --no-phys-branch --ablation-name a1_no_phys --seeds 42 0 1 2 3
+
+python main.py \
+    --no-phys-branch --ablation-name a1_no_phys --seeds 42 0 1 2 3
+```
+
+### A2 — No cross-modal InfoNCE (λ₂ = 0)
+
+```bash
+python dual_kd_gnn/main.py --dataset bbbp \
+    --cross-distill-weight 0 --ablation-name a2_no_infonce --seeds 42 0 1 2 3
+
+python main.py \
+    --cross-distill-weight 0 --ablation-name a2_no_infonce --seeds 42 0 1 2 3
+```
+
+### A3 — No intra-modal MSE KD (λ₁ = 0)
+
+```bash
+python dual_kd_gnn/main.py --dataset bbbp \
+    --distill-weight 0 --ablation-name a3_no_mse_kd --seeds 42 0 1 2 3
+
+python main.py \
+    --distill-weight 0 --ablation-name a3_no_mse_kd --seeds 42 0 1 2 3
+```
+
+### A4 — No codebook / per-class U_k (M = 0)
+
+```bash
+python dual_kd_gnn/main.py --dataset bbbp \
+    --ih-num-prototypes 0 --ablation-name a4_no_codebook --seeds 42 0 1 2 3
+
+python main.py \
+    --ih-num-prototypes 0 --ablation-name a4_no_codebook --seeds 42 0 1 2 3
+```
+
+### A5 — No interaction tensor head (linear head only)
+
+`--ih-rank 0` replaces the interaction tensor with a pure linear classifier.
+
+```bash
+python dual_kd_gnn/main.py --dataset bbbp \
+    --ih-rank 0 --ablation-name a5_linear_head --seeds 42 0 1 2 3
+
+python main.py \
+    --ih-rank 0 --ablation-name a5_linear_head --seeds 42 0 1 2 3
+```
+
+### Full ablation sweep (all datasets, all 5 ablations)
+
+```bash
+python main.py --no-phys-branch      --ablation-name a1_no_phys    --seeds 42 0 1 2 3
+python main.py --cross-distill-weight 0 --ablation-name a2_no_infonce --seeds 42 0 1 2 3
+python main.py --distill-weight 0    --ablation-name a3_no_mse_kd  --seeds 42 0 1 2 3
+python main.py --ih-num-prototypes 0 --ablation-name a4_no_codebook --seeds 42 0 1 2 3
+python main.py --ih-rank 0           --ablation-name a5_linear_head --seeds 42 0 1 2 3
+```
+
+---
+
+## 8. Aggregate ablation results
+
+After all ablation runs finish, generate the summary CSV
+(`ablation/ablation_summary.csv`):
+
+```bash
+python ablation/main.py
+```
+
+The script scans every `ablation/runs/<ablation_name>/<dataset>/metrics.json`,
+groups results by **(ablation × dataset)**, and writes one row per combination
+with the following columns:
+
+| Column | Description |
+|--------|-------------|
+| `ablation` | Ablation label passed via `--ablation-name` |
+| `dataset` | Dataset name (seed suffix stripped) |
+| `n_seeds` | Number of seed runs found |
+| `seeds` | List of seeds used |
+| `mean_test_roc_auc` | Mean test AUROC across seeds |
+| `std_test_roc_auc` | Sample std (ddof=1) of test AUROC |
+| `mean_best_val_auc` | Mean best validation AUROC |
+| `per_seed_aucs` | Per-seed AUROC values |
+| `zero_phys_branch` | A1 setting |
+| `distill_weight` | A3 setting |
+| `cross_distill_weight` | A2 setting |
+| `ih_rank` | A5 setting |
+| `ih_num_prototypes` | A4 setting |
+
+---
+
 ## Output layout
 
 ```

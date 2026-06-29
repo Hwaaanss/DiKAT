@@ -1,0 +1,35 @@
+{
+  "model_name": "dual_distillation",
+  "model_slug": "dual_kd_gnn",
+  "dataset_name": "tox21_seed3",
+  "target_columns": [
+    "NR-AR",
+    "NR-AR-LBD",
+    "NR-AhR",
+    "NR-Aromatase",
+    "NR-ER",
+    "NR-ER-LBD",
+    "NR-PPAR-gamma",
+    "SR-ARE",
+    "SR-ATAD5",
+    "SR-HSE",
+    "SR-MMP",
+    "SR-p53"
+  ],
+  "num_targets": 12,
+  "best_val_auc": 0.8285029914442013,
+  "best_epoch": 7,
+  "test_roc_auc": 0.8081766784622298,
+  "num_parameters": 3473872,
+  "uses_dual_features": true,
+  "elapsed_seconds": 1886.75,
+  "ablation_name": "full_model",
+  "seed": 3,
+  "ablation_settings": {
+    "zero_phys_branch": false,
+    "distill_weight": 0.04596991406126452,
+    "cross_distill_weight": 0.05,
+    "ih_rank": 32,
+    "ih_num_prototypes": 8
+  }
+}

@@ -13,7 +13,7 @@ from common.datasets import (
     resolve_target_columns,
 )
 from common.io_utils import ensure_dir
-from common.runner import add_general_training_arguments, collect_override_hparams, run_experiment
+from common.runner import add_general_training_arguments, collect_override_hparams, run_experiment, run_multi_seed
 from dual_kd_gnn.main import (
     MODEL_SPEC,
     add_dual_model_arguments,
@@ -58,6 +58,9 @@ def main() -> None:
     model_dir = get_project_root() / spec.slug
     summary_rows: list[dict[str, object]] = []
     skipped: list[str] = []
+    seeds = args.seeds if args.seeds is not None else [args.seed]
+    multi_seed = len(seeds) > 1
+    ablation_name = getattr(args, "ablation_name", None)
 
     for name in args.datasets:
         dataset_spec = get_dataset_spec(name)
@@ -73,29 +76,57 @@ def main() -> None:
         target_columns = resolve_target_columns(dataset_spec, data_path)
         print(f"\n{'=' * 72}")
         print(f"Benchmarking {spec.name} on {name} ({len(target_columns)} task(s))")
+        if multi_seed:
+            print(f"Seeds: {seeds}")
         print(f"{'=' * 72}")
-        metrics = run_experiment(
-            spec=spec,
-            data_path=str(data_path),
-            dataset_name=dataset_spec.name,
-            seed=args.seed,
-            device_name=args.device,
-            target_columns=target_columns,
-            model_dir=model_dir,
-            overrides=hparam_overrides,
-            model_kwargs=model_kwargs,
-            smiles_column=dataset_spec.smiles_column,
-        )
-        summary_rows.append(
-            {
-                "dataset": name,
-                "num_tasks": metrics["num_targets"],
-                "test_roc_auc": metrics["test_roc_auc"],
-                "best_val_auc": metrics["best_val_auc"],
-                "num_parameters": metrics["num_parameters"],
-                "elapsed_seconds": metrics["elapsed_seconds"],
-            }
-        )
+
+        if multi_seed:
+            result = run_multi_seed(
+                spec=spec,
+                data_path=str(data_path),
+                dataset_name=dataset_spec.name,
+                seeds=seeds,
+                device_name=args.device,
+                target_columns=target_columns,
+                model_dir=model_dir,
+                overrides=hparam_overrides,
+                model_kwargs=model_kwargs,
+                smiles_column=dataset_spec.smiles_column,
+                ablation_name=ablation_name,
+            )
+            summary_rows.append(
+                {
+                    "dataset": name,
+                    "num_tasks": len(target_columns),
+                    "test_roc_auc_mean": result["mean_test_roc_auc"],
+                    "test_roc_auc_std": result["std_test_roc_auc"],
+                    "seeds": str(seeds),
+                }
+            )
+        else:
+            metrics = run_experiment(
+                spec=spec,
+                data_path=str(data_path),
+                dataset_name=dataset_spec.name,
+                seed=seeds[0],
+                device_name=args.device,
+                target_columns=target_columns,
+                model_dir=model_dir,
+                overrides=hparam_overrides,
+                model_kwargs=model_kwargs,
+                smiles_column=dataset_spec.smiles_column,
+                ablation_name=ablation_name,
+            )
+            summary_rows.append(
+                {
+                    "dataset": name,
+                    "num_tasks": metrics["num_targets"],
+                    "test_roc_auc": metrics["test_roc_auc"],
+                    "best_val_auc": metrics["best_val_auc"],
+                    "num_parameters": metrics["num_parameters"],
+                    "elapsed_seconds": metrics["elapsed_seconds"],
+                }
+            )
 
     if not summary_rows:
         raise SystemExit(
@@ -108,11 +139,19 @@ def main() -> None:
 
     print("\nBenchmark summary (test ROC-AUC)")
     for row in summary_rows:
-        print(
-            f"  {str(row['dataset']):<10} "
-            f"tasks={row['num_tasks']:<3} "
-            f"test_roc_auc={float(row['test_roc_auc']):.4f}"
-        )
+        if "test_roc_auc_mean" in row:
+            print(
+                f"  {str(row['dataset']):<10} "
+                f"tasks={row['num_tasks']:<3} "
+                f"test_roc_auc={float(row['test_roc_auc_mean']):.4f} ± {float(row['test_roc_auc_std']):.4f}"
+                f"  seeds={row['seeds']}"
+            )
+        else:
+            print(
+                f"  {str(row['dataset']):<10} "
+                f"tasks={row['num_tasks']:<3} "
+                f"test_roc_auc={float(row['test_roc_auc']):.4f}"
+            )
     if skipped:
         print(f"\nSkipped (missing data): {', '.join(skipped)}")
     print(f"\nSaved benchmark summary to: {summary_path}")

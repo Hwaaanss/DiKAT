@@ -1,0 +1,25 @@
+{
+  "model_name": "dual_distillation",
+  "model_slug": "dual_kd_gnn",
+  "dataset_name": "clintox_seed1",
+  "target_columns": [
+    "FDA_APPROVED",
+    "CT_TOX"
+  ],
+  "num_targets": 2,
+  "best_val_auc": 0.9479390175042348,
+  "best_epoch": 2,
+  "test_roc_auc": 0.8985507246376812,
+  "num_parameters": 2637894,
+  "uses_dual_features": true,
+  "elapsed_seconds": 345.12,
+  "ablation_name": "a2_no_infonce",
+  "seed": 1,
+  "ablation_settings": {
+    "zero_phys_branch": false,
+    "distill_weight": 0.008679022613626963,
+    "cross_distill_weight": 0.0,
+    "ih_rank": 16,
+    "ih_num_prototypes": 16
+  }
+}

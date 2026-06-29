@@ -34,7 +34,7 @@ from common.trainer import Trainer
 from dual_kd_gnn.model import DoubleGCNTransformerModel
 
 
-MODEL_NAME = "Double_GCN_Transformer"
+MODEL_NAME = "dual_distillation"
 MODEL_SLUG = "dual_kd_gnn"
 
 

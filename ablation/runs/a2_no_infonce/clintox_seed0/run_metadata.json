@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-06-27T14:00:11",
+  "data_path": "/home/dioxide421/Dual_Branch_DR/data/clintox.csv",
+  "smiles_column": "smiles",
+  "hparams": {
+    "batch_size": 64,
+    "lr": 0.0004583219450808222,
+    "weight_decay": 3.866561216554681e-06,
+    "num_epochs": 150,
+    "patience": 10,
+    "gcn_pretrain_epochs": 150,
+    "transformer_epochs": 150,
+    "pretrain_lr": 0.0010763808595313667,
+    "transformer_lr": 0.0004583219450808222,
+    "ema_decay": 0.9912927544589064,
+    "ema_decay_init": 0.9,
+    "distill_weight": 0.008679022613626963,
+    "cross_distill_weight": 0.0
+  },
+  "model_kwargs": {
+    "gnn_hidden": 192,
+    "gnn_layers": 4,
+    "gnn_dropout": 0.41794861662980276,
+    "nhead": 8,
+    "tf_layers": 2,
+    "dim_ff": 768,
+    "tf_dropout": 0.4970698209075701,
+    "ih_rank": 16,
+    "ih_symmetric": false,
+    "ih_proj_dim": 256,
+    "ih_num_prototypes": 16,
+    "ih_assignment_mode": "sparse",
+    "ih_diversity_weight": 0.0010514070261004752,
+    "info_nce_temperature": 0.5,
+    "zero_phys_branch": false
+  },
+  "device": "cuda",
+  "model_notes": "Dual-branch GCN + EMA teacher KD + transformer model with BCE task loss, intra-modal MSE KD, and graph-level cross-modal InfoNCE KD (CLIP-style, asymmetric predictor against opposite-branch EMA teacher pool) during stage 1. Optional cosine ramp on EMA momentum (ema_decay_init -> ema_decay) over stage 1 epochs."
+}

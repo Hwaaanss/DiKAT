@@ -5,12 +5,14 @@ import time
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
 
 from common.config import (
     DEFAULT_SEED,
     ModelSpec,
     get_device,
+    get_project_root,
     set_seed,
 )
 from common.data import create_datasets
@@ -74,7 +76,22 @@ def add_dataset_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentP
 
 
 def add_general_training_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
-    parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help="Random seed.")
+    parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help="Random seed (single run).")
+    parser.add_argument(
+        "--ablation-name",
+        default=None,
+        help=(
+            "Ablation label (e.g. 'a1_no_phys'). When set, artifacts are saved to "
+            "ablation/runs/<name>/<dataset>/ instead of dual_kd_gnn/runs/<dataset>/."
+        ),
+    )
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Run with multiple seeds and report mean±std AUROC. Overrides --seed. E.g.: --seeds 42 0 1 2 3",
+    )
     parser.add_argument("--device", default="cuda", help="Compute device. Defaults to cuda; pass cpu/mps/cuda:N to override.")
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
@@ -143,6 +160,7 @@ def run_experiment(
     overrides: dict[str, Any] | None = None,
     model_kwargs: dict[str, Any] | None = None,
     smiles_column: str = "smiles",
+    ablation_name: str | None = None,
 ) -> dict[str, Any]:
     set_seed(seed)
     device = get_device(device_name)
@@ -176,8 +194,13 @@ def run_experiment(
     elapsed_seconds = time.time() - train_start
 
     history_rows = trainer.build_history_rows()
-    run_dir = model_dir / "runs" / dataset_name
-    metrics = {
+
+    if ablation_name:
+        run_dir = get_project_root() / "ablation" / "runs" / ablation_name / dataset_name
+    else:
+        run_dir = model_dir / "runs" / dataset_name
+
+    metrics: dict[str, Any] = {
         "model_name": spec.name,
         "model_slug": spec.slug,
         "dataset_name": dataset_name,
@@ -190,6 +213,17 @@ def run_experiment(
         "uses_dual_features": spec.uses_dual_features,
         "elapsed_seconds": round(elapsed_seconds, 2),
     }
+    if ablation_name is not None:
+        metrics["ablation_name"] = ablation_name
+        metrics["seed"] = seed
+        metrics["ablation_settings"] = {
+            "zero_phys_branch": model_kwargs.get("zero_phys_branch", False),
+            "distill_weight": hparams.get("distill_weight"),
+            "cross_distill_weight": hparams.get("cross_distill_weight"),
+            "ih_rank": model_kwargs.get("ih_rank"),
+            "ih_num_prototypes": model_kwargs.get("ih_num_prototypes"),
+        }
+
     save_run_artifacts(
         run_dir=run_dir,
         history_rows=history_rows,
@@ -236,6 +270,50 @@ def resolve_dataset_inputs(args: argparse.Namespace) -> tuple[str, str, list[str
     return data_path, dataset_name, target_columns, smiles_column
 
 
+def run_multi_seed(
+    spec: ModelSpec,
+    data_path: str,
+    dataset_name: str,
+    seeds: list[int],
+    device_name: str | None,
+    target_columns: list[str],
+    model_dir: Path,
+    overrides: dict[str, Any] | None = None,
+    model_kwargs: dict[str, Any] | None = None,
+    smiles_column: str = "smiles",
+    ablation_name: str | None = None,
+) -> dict[str, Any]:
+    """Run the same experiment over multiple seeds and report mean ± std AUROC."""
+    aucs: list[float] = []
+    for seed in seeds:
+        run_ds_name = f"{dataset_name}_seed{seed}"
+        metrics = run_experiment(
+            spec=spec,
+            data_path=data_path,
+            dataset_name=run_ds_name,
+            seed=seed,
+            device_name=device_name,
+            target_columns=target_columns,
+            model_dir=model_dir,
+            overrides=overrides,
+            model_kwargs=model_kwargs,
+            smiles_column=smiles_column,
+            ablation_name=ablation_name,
+        )
+        aucs.append(metrics["test_roc_auc"])
+
+    mean_auc = float(np.mean(aucs))
+    std_auc = float(np.std(aucs, ddof=1)) if len(aucs) > 1 else 0.0
+    sep = "=" * 60
+    print(f"\n{sep}")
+    print(f"Multi-seed results ({len(seeds)} seeds) on {dataset_name}:")
+    print(f"  Seeds:        {seeds}")
+    print(f"  Per-seed AUC: {', '.join(f'{v:.4f}' for v in aucs)}")
+    print(f"  Mean ± Std:   {mean_auc:.4f} ± {std_auc:.4f}")
+    print(sep)
+    return {"dataset_name": dataset_name, "mean_test_roc_auc": mean_auc, "std_test_roc_auc": std_auc, "per_seed_aucs": aucs, "seeds": seeds}
+
+
 def run_from_cli(spec: ModelSpec, model_dir: Path) -> dict[str, Any]:
     parser = build_single_model_parser(spec)
     args = parser.parse_args()
@@ -249,15 +327,32 @@ def run_from_cli(spec: ModelSpec, model_dir: Path) -> dict[str, Any]:
             if value is not None
         }
     )
+    seeds = args.seeds if args.seeds is not None else [args.seed]
+    ablation_name = getattr(args, "ablation_name", None)
+    if len(seeds) > 1:
+        return run_multi_seed(
+            spec=spec,
+            data_path=data_path,
+            dataset_name=dataset_name,
+            seeds=seeds,
+            device_name=args.device,
+            target_columns=target_columns,
+            model_dir=model_dir,
+            overrides=hparam_overrides,
+            model_kwargs=model_kwargs,
+            smiles_column=smiles_column,
+            ablation_name=ablation_name,
+        )
     return run_experiment(
         spec=spec,
         data_path=data_path,
         dataset_name=dataset_name,
-        seed=args.seed,
+        seed=seeds[0],
         device_name=args.device,
         target_columns=target_columns,
         model_dir=model_dir,
         overrides=hparam_overrides,
         model_kwargs=model_kwargs,
         smiles_column=smiles_column,
+        ablation_name=ablation_name,
     )

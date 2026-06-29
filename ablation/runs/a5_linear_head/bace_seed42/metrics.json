@@ -1,0 +1,24 @@
+{
+  "model_name": "dual_distillation",
+  "model_slug": "dual_kd_gnn",
+  "dataset_name": "bace_seed42",
+  "target_columns": [
+    "Class"
+  ],
+  "num_targets": 1,
+  "best_val_auc": 0.894173394173394,
+  "best_epoch": 34,
+  "test_roc_auc": 0.8442334739803095,
+  "num_parameters": 19138821,
+  "uses_dual_features": true,
+  "elapsed_seconds": 250.92,
+  "ablation_name": "a5_linear_head",
+  "seed": 42,
+  "ablation_settings": {
+    "zero_phys_branch": false,
+    "distill_weight": 0.0011950712075118732,
+    "cross_distill_weight": 0.05,
+    "ih_rank": 0,
+    "ih_num_prototypes": 4
+  }
+}
