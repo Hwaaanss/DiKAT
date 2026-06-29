@@ -12,7 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from common.config import ModelSpec
 from common.runner import run_from_cli
 
-from dual_kd_gnn.model import DoubleGCNTransformerModel
+from dual_kd_gnn.model import DualDistillationModel
 
 
 MODEL_KWARG_NAMES = [
@@ -145,7 +145,7 @@ MODEL_SPEC = ModelSpec(
     name="dual_distillation",
     slug="dual_kd_gnn",
     uses_dual_features=True,
-    builder=lambda num_classes, **model_kwargs: DoubleGCNTransformerModel(
+    builder=lambda num_classes, **model_kwargs: DualDistillationModel(
         num_classes=num_classes, **model_kwargs
     ),
     default_hparams={

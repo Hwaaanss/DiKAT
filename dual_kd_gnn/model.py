@@ -304,7 +304,7 @@ class InteractionTensorHead(nn.Module):
         return F.softmax(self.assignment_logits_u / tau, dim=-1)
 
 
-class DoubleGCNTransformerModel(nn.Module):
+class DualDistillationModel(nn.Module):
     supports_stagewise_teacher = True
 
     def __init__(

@@ -31,7 +31,7 @@ from common.datasets import (
 from common.io_utils import ensure_dir, save_json, save_run_artifacts
 from common.plotting import plot_training_curves
 from common.trainer import Trainer
-from dual_kd_gnn.model import DoubleGCNTransformerModel
+from dual_kd_gnn.model import DualDistillationModel
 
 
 MODEL_NAME = "dual_distillation"
@@ -246,7 +246,7 @@ def build_metrics(
     target_columns: list[str],
     best_val_auc: float,
     best_epoch: int,
-    model: DoubleGCNTransformerModel,
+    model: DualDistillationModel,
     elapsed_seconds: float,
     status: str,
     test_roc_auc: float | None = None,
@@ -295,7 +295,7 @@ def train_once(
 ) -> dict[str, object]:
     set_seed(seed)
     device = get_device(device_name)
-    model = DoubleGCNTransformerModel(num_classes=len(target_columns), **model_kwargs)
+    model = DualDistillationModel(num_classes=len(target_columns), **model_kwargs)
     trainer = Trainer(
         model=model,
         train_dataset=train_dataset,
