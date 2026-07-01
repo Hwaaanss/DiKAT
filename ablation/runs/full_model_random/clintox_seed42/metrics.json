@@ -1,0 +1,19 @@
+{
+  "model_name": "Dual_KD_GNN_random_split",
+  "model_slug": "dual_kd_gnn",
+  "dataset_name": "clintox_full_random_seed42",
+  "split_protocol": "random_80_10_10",
+  "target_columns": [
+    "FDA_APPROVED",
+    "CT_TOX"
+  ],
+  "num_targets": 2,
+  "best_val_auc": 0.9139616571939644,
+  "best_epoch": 2,
+  "test_roc_auc": 0.8658579317691252,
+  "num_parameters": 2637894,
+  "uses_dual_features": true,
+  "elapsed_seconds": 352.2,
+  "seed": 42,
+  "ablation_name": "full_model_random"
+}

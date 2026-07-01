@@ -1,0 +1,6 @@
+dataset,n_total,n_success,n_invalid_smiles,n_embed_fail,n_mmff_fail,n_total_fail,failure_rate,elapsed_seconds
+bace,1513,1513,0,0,0,0,0.0,21.26
+bbbp,2050,1999,11,2,38,51,0.0249,21.09
+clintox,1484,1429,4,20,31,55,0.0371,22.08
+sider,1427,1304,0,41,82,123,0.0862,3992.26
+tox21,7831,7657,8,29,137,174,0.0222,60.33
