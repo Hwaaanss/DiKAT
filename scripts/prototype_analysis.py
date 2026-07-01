@@ -1,14 +1,26 @@
 """Prototype interpretability analysis for the Dual-KD-GNN classifier head.
 
-Produces three artifact families per saved single-seed model:
+Produces four artifact families per saved single-seed model:
 
   results/artifacts/prototypes/<dataset>_assignment_heatmap.png
-      K (class) x M (prototype) soft-assignment alpha matrix from
-      InteractionTensorHead.get_assignment_probabilities().
+      Side-by-side visualization of the K x M soft-assignment alpha matrix
+      from InteractionTensorHead.get_assignment_probabilities():
+        (a) Raw alpha with vmin/vmax auto-fit to the actual data range so
+            subtle differences are visible (previously used fixed [0,1] scale
+            which rendered near-uniform alphas as a single flat color).
+        (b) Deviation from the uniform baseline 1/M using a symmetric
+            divergent colormap; this reveals whether the codebook developed
+            task-specific prototype preferences or remained near-uniform.
+
+  results/artifacts/prototypes/<dataset>_alpha_matrix.csv
+      Raw alpha values as a K x M table with class names as row headers and
+      prototype indices as column headers. Also reports summary stats:
+      min, max, mean, and max deviation from uniform (1/M) per row.
 
   results/artifacts/prototypes/<dataset>_prototype_norms.csv
       Per-prototype activation statistics over the test split:
       mean L2 norm of the projection z -> C_m^T z across molecules.
+      This is INDEPENDENT of alpha and reflects intrinsic codebook capacity.
 
   results/artifacts/prototypes/<dataset>_top_molecules.csv
       Top-K (default 10) molecules per prototype ranked by activation norm,
@@ -17,9 +29,12 @@ Produces three artifact families per saved single-seed model:
 
 Single-seed run weights are read from dual_kd_gnn/runs/<dataset>/. These were
 trained from a tuned best_config; their hyperparameters are consistent with the
-5-seed ablation full_model runs. Per the paper plan, this analysis is reported
-as a "representative seed" study; 5-seed consistency is deferred to a Stage 4
-revision response if reviewers ask.
+5-seed ablation full_model runs.
+
+Usage on server:
+  conda activate dualgnn
+  python scripts/prototype_analysis.py
+  python scripts/prototype_analysis.py --datasets tox21    # single dataset
 """
 from __future__ import annotations
 
@@ -76,25 +91,81 @@ def get_assignment_matrix(model: DualDistillationModel) -> np.ndarray:
 
 
 def save_heatmap(alpha: np.ndarray, target_columns: list[str], out_path: Path, title: str) -> None:
+    """Side-by-side heatmap: (a) raw alpha with auto-fit range and (b) deviation from uniform.
+
+    The dual view exists because a naive [0, 1] color scale on a near-uniform matrix
+    renders every cell as a single flat color and hides the actual signal magnitude.
+    Panel (b) with a symmetric divergent map makes it obvious whether alpha is
+    uniform (all near-white) or task-specific (colorful).
+    """
     if alpha.size == 0:
         print(f"  [skip] no codebook for {title}")
         return
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(max(4, alpha.shape[1] * 0.8), max(3, alpha.shape[0] * 0.35)))
-    im = ax.imshow(alpha, aspect="auto", cmap="viridis", vmin=0.0, vmax=1.0)
-    ax.set_xticks(range(alpha.shape[1]))
-    ax.set_xticklabels([f"P{m}" for m in range(alpha.shape[1])], fontsize=8)
-    ax.set_yticks(range(alpha.shape[0]))
-    short_labels = [tc[:30] + ("..." if len(tc) > 30 else "") for tc in target_columns]
-    ax.set_yticklabels(short_labels, fontsize=7)
-    ax.set_xlabel("Prototype index m")
-    ax.set_ylabel("Class index k")
-    ax.set_title(title)
-    fig.colorbar(im, ax=ax, label=r"$\alpha_{k,m}$")
+    K, M = alpha.shape
+    uniform = 1.0 / M
+    dev = alpha - uniform
+    dev_absmax = max(float(np.abs(dev).max()), 1e-6)
+
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2, figsize=(max(12, M * 1.4 + 5), max(3.5, K * 0.35 + 1))
+    )
+    short_labels = [tc[:20] + ("..." if len(tc) > 20 else "") for tc in target_columns]
+    proto_labels = [f"P{m}" for m in range(M)]
+
+    # (a) Raw alpha, auto-fit range so subtle differences are visible.
+    im1 = ax1.imshow(alpha, aspect="auto", cmap="viridis",
+                     vmin=float(alpha.min()), vmax=float(alpha.max()))
+    ax1.set_xticks(range(M)); ax1.set_xticklabels(proto_labels, fontsize=9)
+    ax1.set_yticks(range(K)); ax1.set_yticklabels(short_labels, fontsize=7)
+    ax1.set_xlabel("Prototype index m")
+    ax1.set_ylabel("Class index k")
+    ax1.set_title(f"(a) raw $\\alpha$ — range [{alpha.min():.3f}, {alpha.max():.3f}]  "
+                  f"uniform = {uniform:.3f}", fontsize=10)
+    for i in range(K):
+        for j in range(M):
+            v = alpha[i, j]
+            color = "white" if v < (alpha.min() + alpha.max()) / 2 else "black"
+            ax1.text(j, i, f"{v:.3f}", ha="center", va="center", color=color, fontsize=7)
+    plt.colorbar(im1, ax=ax1, label=r"$\alpha_{k,m}$")
+
+    # (b) Deviation from uniform, symmetric divergent map.
+    im2 = ax2.imshow(dev, aspect="auto", cmap="RdBu_r",
+                     vmin=-dev_absmax, vmax=dev_absmax)
+    ax2.set_xticks(range(M)); ax2.set_xticklabels(proto_labels, fontsize=9)
+    ax2.set_yticks(range(K)); ax2.set_yticklabels(short_labels, fontsize=7)
+    ax2.set_xlabel("Prototype index m")
+    signal_note = "very small: assignment ≈ uniform" if dev_absmax < 0.02 else "task-specific"
+    ax2.set_title(f"(b) $\\alpha - 1/M$ — max |dev| = {dev_absmax:.4f}  ({signal_note})",
+                  fontsize=10)
+    for i in range(K):
+        for j in range(M):
+            v = dev[i, j]
+            color = "white" if abs(v) > dev_absmax * 0.6 else "black"
+            ax2.text(j, i, f"{v:+.3f}", ha="center", va="center", color=color, fontsize=7)
+    plt.colorbar(im2, ax=ax2, label=r"$\alpha_{k,m} - 1/M$")
+
+    fig.suptitle(title, fontsize=11, y=1.02)
     fig.tight_layout()
-    fig.savefig(out_path, dpi=200)
+    fig.savefig(out_path, dpi=250, bbox_inches="tight")
+    fig.savefig(out_path.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(fig)
+
+
+def save_alpha_csv(alpha: np.ndarray, target_columns: list[str], out_path: Path) -> None:
+    """Save the raw alpha matrix + per-row deviation statistics."""
+    if alpha.size == 0:
+        return
+    K, M = alpha.shape
+    uniform = 1.0 / M
+    df = pd.DataFrame(alpha,
+                      index=[f"class_{k:02d}_{tc[:30]}" for k, tc in enumerate(target_columns)],
+                      columns=[f"P{m}" for m in range(M)])
+    df["_row_max"] = alpha.max(axis=1)
+    df["_row_min"] = alpha.min(axis=1)
+    df["_max_dev_from_uniform"] = np.abs(alpha - uniform).max(axis=1)
+    df.to_csv(out_path)
 
 
 def build_test_split(dataset: str) -> tuple[MoleculeDualDataset, list[str]]:
@@ -228,13 +299,26 @@ def run_dataset(dataset: str, device: torch.device) -> None:
 
     alpha = get_assignment_matrix(model)
     print(f"  alpha shape: {alpha.shape}")
+    if alpha.size > 0:
+        uniform = 1.0 / alpha.shape[1]
+        dev = float(np.abs(alpha - uniform).max())
+        print(f"  alpha range: [{alpha.min():.4f}, {alpha.max():.4f}]  "
+              f"uniform = {uniform:.4f}  max |dev from uniform| = {dev:.4f}")
+        if dev < 0.02:
+            print(f"  [NOTE] alpha is effectively uniform on {dataset}; "
+                  "codebook did not develop task-specific prototype preferences.")
 
     heatmap_path = OUT_DIR / f"{dataset}_assignment_heatmap.png"
-    save_heatmap(alpha, target_columns, heatmap_path, title=f"{dataset} prototype assignment")
+    save_heatmap(alpha, target_columns, heatmap_path,
+                 title=f"{dataset} codebook prototype assignment ({alpha.shape[0]} tasks × {alpha.shape[1]} prototypes)")
     print(f"  saved heatmap: {heatmap_path.relative_to(PROJECT_ROOT)}")
 
     if alpha.size == 0:
         return  # no codebook; nothing more to do
+
+    alpha_csv_path = OUT_DIR / f"{dataset}_alpha_matrix.csv"
+    save_alpha_csv(alpha, target_columns, alpha_csv_path)
+    print(f"  saved alpha CSV: {alpha_csv_path.relative_to(PROJECT_ROOT)}")
 
     test_ds, _ = build_test_split(dataset)
     activations = compute_prototype_activations(model, test_ds, device)
