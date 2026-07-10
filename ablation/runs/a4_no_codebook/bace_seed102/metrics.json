@@ -1,0 +1,16 @@
+{
+  "ablation_name": "a4_no_codebook",
+  "dataset_name": "bace_a4_no_codebook_seed102",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "Class"
+  ],
+  "num_targets": 1,
+  "best_val_auc": 0.8739908739908739,
+  "best_epoch": 21,
+  "test_roc_auc": 0.8539029535864979,
+  "num_parameters": 19147013,
+  "uses_dual_features": true,
+  "elapsed_seconds": 267.1,
+  "seed": 102
+}

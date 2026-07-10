@@ -1,0 +1,27 @@
+{
+  "ablation_name": "a4_no_codebook",
+  "dataset_name": "tox21_a4_no_codebook_seed103",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "NR-AR",
+    "NR-AR-LBD",
+    "NR-AhR",
+    "NR-Aromatase",
+    "NR-ER",
+    "NR-ER-LBD",
+    "NR-PPAR-gamma",
+    "SR-ARE",
+    "SR-ATAD5",
+    "SR-HSE",
+    "SR-MMP",
+    "SR-p53"
+  ],
+  "num_targets": 12,
+  "best_val_auc": 0.8104405593856486,
+  "best_epoch": 4,
+  "test_roc_auc": 0.7947397628035159,
+  "num_parameters": 3539216,
+  "uses_dual_features": true,
+  "elapsed_seconds": 1783.0,
+  "seed": 103
+}

@@ -1,0 +1,17 @@
+{
+  "ablation_name": "a2_no_infonce",
+  "dataset_name": "clintox_a2_no_infonce_seed101",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "FDA_APPROVED",
+    "CT_TOX"
+  ],
+  "num_targets": 2,
+  "best_val_auc": 0.9509630466152205,
+  "best_epoch": 17,
+  "test_roc_auc": 0.9351449275362318,
+  "num_parameters": 2637894,
+  "uses_dual_features": true,
+  "elapsed_seconds": 388.32,
+  "seed": 101
+}

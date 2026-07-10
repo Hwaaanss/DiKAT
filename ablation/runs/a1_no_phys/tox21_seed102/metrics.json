@@ -1,0 +1,27 @@
+{
+  "ablation_name": "a1_no_phys",
+  "dataset_name": "tox21_a1_no_phys_seed102",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "NR-AR",
+    "NR-AR-LBD",
+    "NR-AhR",
+    "NR-Aromatase",
+    "NR-ER",
+    "NR-ER-LBD",
+    "NR-PPAR-gamma",
+    "SR-ARE",
+    "SR-ATAD5",
+    "SR-HSE",
+    "SR-MMP",
+    "SR-p53"
+  ],
+  "num_targets": 12,
+  "best_val_auc": 0.8042669297145788,
+  "best_epoch": 12,
+  "test_roc_auc": 0.7882021846776549,
+  "num_parameters": 3473872,
+  "uses_dual_features": true,
+  "elapsed_seconds": 1878.67,
+  "seed": 102
+}

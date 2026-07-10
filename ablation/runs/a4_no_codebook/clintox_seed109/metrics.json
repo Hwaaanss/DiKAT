@@ -1,0 +1,17 @@
+{
+  "ablation_name": "a4_no_codebook",
+  "dataset_name": "clintox_a4_no_codebook_seed109",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "FDA_APPROVED",
+    "CT_TOX"
+  ],
+  "num_targets": 2,
+  "best_val_auc": 0.9574989020641195,
+  "best_epoch": 20,
+  "test_roc_auc": 0.8586956521739131,
+  "num_parameters": 2523142,
+  "uses_dual_features": true,
+  "elapsed_seconds": 385.27,
+  "seed": 109
+}

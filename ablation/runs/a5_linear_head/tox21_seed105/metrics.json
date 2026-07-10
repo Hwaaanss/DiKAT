@@ -1,0 +1,27 @@
+{
+  "ablation_name": "a5_linear_head",
+  "dataset_name": "tox21_a5_linear_head_seed105",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "NR-AR",
+    "NR-AR-LBD",
+    "NR-AhR",
+    "NR-Aromatase",
+    "NR-ER",
+    "NR-ER-LBD",
+    "NR-PPAR-gamma",
+    "SR-ARE",
+    "SR-ATAD5",
+    "SR-HSE",
+    "SR-MMP",
+    "SR-p53"
+  ],
+  "num_targets": 12,
+  "best_val_auc": 0.8195006438906437,
+  "best_epoch": 6,
+  "test_roc_auc": 0.8130296749238037,
+  "num_parameters": 3342608,
+  "uses_dual_features": true,
+  "elapsed_seconds": 1787.06,
+  "seed": 105
+}

@@ -1,0 +1,17 @@
+{
+  "ablation_name": "full_model",
+  "dataset_name": "clintox_full_random_seed107",
+  "split_protocol": "random_80_10_10",
+  "target_columns": [
+    "FDA_APPROVED",
+    "CT_TOX"
+  ],
+  "num_targets": 2,
+  "best_val_auc": 0.8750776397515527,
+  "best_epoch": 5,
+  "test_roc_auc": 0.794395911841955,
+  "num_parameters": 2637894,
+  "uses_dual_features": true,
+  "elapsed_seconds": 377.4,
+  "seed": 107
+}

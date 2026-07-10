@@ -1,0 +1,16 @@
+{
+  "ablation_name": "a3_no_mse_kd",
+  "dataset_name": "bace_a3_no_mse_kd_seed106",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "Class"
+  ],
+  "num_targets": 1,
+  "best_val_auc": 0.8853983853983854,
+  "best_epoch": 25,
+  "test_roc_auc": 0.8299929676511956,
+  "num_parameters": 19171593,
+  "uses_dual_features": true,
+  "elapsed_seconds": 278.71,
+  "seed": 106
+}

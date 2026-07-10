@@ -1,0 +1,27 @@
+{
+  "ablation_name": "full_model",
+  "dataset_name": "tox21_full_model_seed108",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "NR-AR",
+    "NR-AR-LBD",
+    "NR-AhR",
+    "NR-Aromatase",
+    "NR-ER",
+    "NR-ER-LBD",
+    "NR-PPAR-gamma",
+    "SR-ARE",
+    "SR-ATAD5",
+    "SR-HSE",
+    "SR-MMP",
+    "SR-p53"
+  ],
+  "num_targets": 12,
+  "best_val_auc": 0.8339508533314187,
+  "best_epoch": 5,
+  "test_roc_auc": 0.8100470782566825,
+  "num_parameters": 3473872,
+  "uses_dual_features": true,
+  "elapsed_seconds": 1828.71,
+  "seed": 108
+}

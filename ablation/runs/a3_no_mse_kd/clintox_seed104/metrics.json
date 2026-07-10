@@ -1,0 +1,17 @@
+{
+  "ablation_name": "a3_no_mse_kd",
+  "dataset_name": "clintox_a3_no_mse_kd_seed104",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "FDA_APPROVED",
+    "CT_TOX"
+  ],
+  "num_targets": 2,
+  "best_val_auc": 0.9547211242863417,
+  "best_epoch": 23,
+  "test_roc_auc": 0.941304347826087,
+  "num_parameters": 2637894,
+  "uses_dual_features": true,
+  "elapsed_seconds": 405.35,
+  "seed": 104
+}

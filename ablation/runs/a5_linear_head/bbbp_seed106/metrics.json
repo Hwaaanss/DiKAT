@@ -1,0 +1,16 @@
+{
+  "ablation_name": "a5_linear_head",
+  "dataset_name": "bbbp_a5_linear_head_seed106",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "p_np"
+  ],
+  "num_targets": 1,
+  "best_val_auc": 0.9521118381915527,
+  "best_epoch": 15,
+  "test_roc_auc": 0.9704045211183818,
+  "num_parameters": 2217221,
+  "uses_dual_features": true,
+  "elapsed_seconds": 297.89,
+  "seed": 106
+}

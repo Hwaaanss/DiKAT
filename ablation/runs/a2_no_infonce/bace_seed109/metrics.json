@@ -1,0 +1,16 @@
+{
+  "ablation_name": "a2_no_infonce",
+  "dataset_name": "bace_a2_no_infonce_seed109",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "Class"
+  ],
+  "num_targets": 1,
+  "best_val_auc": 0.8664443664443665,
+  "best_epoch": 18,
+  "test_roc_auc": 0.8479254571026723,
+  "num_parameters": 19171593,
+  "uses_dual_features": true,
+  "elapsed_seconds": 268.51,
+  "seed": 109
+}

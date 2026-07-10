@@ -1,0 +1,16 @@
+{
+  "ablation_name": "full_model",
+  "dataset_name": "bace_full_model_seed103",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "Class"
+  ],
+  "num_targets": 1,
+  "best_val_auc": 0.8731133731133731,
+  "best_epoch": 7,
+  "test_roc_auc": 0.8364978902953587,
+  "num_parameters": 19171593,
+  "uses_dual_features": true,
+  "elapsed_seconds": 254.08,
+  "seed": 103
+}

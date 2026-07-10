@@ -1,0 +1,16 @@
+{
+  "ablation_name": "full_model",
+  "dataset_name": "bbbp_full_model_seed100",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "p_np"
+  ],
+  "num_targets": 1,
+  "best_val_auc": 0.9622248661511006,
+  "best_epoch": 15,
+  "test_roc_auc": 0.966686496133254,
+  "num_parameters": 2233609,
+  "uses_dual_features": true,
+  "elapsed_seconds": 329.42,
+  "seed": 100
+}

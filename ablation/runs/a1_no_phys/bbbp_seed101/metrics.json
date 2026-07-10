@@ -1,0 +1,16 @@
+{
+  "ablation_name": "a1_no_phys",
+  "dataset_name": "bbbp_a1_no_phys_seed101",
+  "split_protocol": "label_aware_scaffold_80_10_10",
+  "target_columns": [
+    "p_np"
+  ],
+  "num_targets": 1,
+  "best_val_auc": 0.9116597263533611,
+  "best_epoch": 8,
+  "test_roc_auc": 0.9406603212373588,
+  "num_parameters": 2233609,
+  "uses_dual_features": true,
+  "elapsed_seconds": 322.49,
+  "seed": 101
+}
