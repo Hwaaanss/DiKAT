@@ -293,16 +293,27 @@ def task_b2(args) -> None:
 # ============================================================================
 
 def _load_per_seed_aucs(condition: str, dataset: str) -> dict[int, float]:
-    """Read test_roc_auc per seed from ablation/runs/<condition>/<dataset>_seed<N>/metrics.json."""
+    """Read test_roc_auc per seed from ablation/runs/<condition>/<dataset>_seed<N>/metrics.json.
+
+    Automatically discovers ALL seed folders (not just the original 5) so n=15
+    seed expansion runs are picked up without modifying this function.
+    """
+    import re
     base = PROJECT_ROOT / "ablation" / "runs" / condition
     out: dict[int, float] = {}
-    for seed in SEEDS:
-        run_dir = base / f"{dataset}_seed{seed}"
+    if not base.exists():
+        return out
+    pattern = re.compile(rf"^{re.escape(dataset)}_seed(\d+)$")
+    for run_dir in base.iterdir():
+        m = pattern.match(run_dir.name)
+        if not m:
+            continue
+        seed = int(m.group(1))
         metrics_path = run_dir / "metrics.json"
         if not metrics_path.exists():
             continue
-        m = json.loads(metrics_path.read_text(encoding="utf-8"))
-        auc = m.get("test_roc_auc")
+        data = json.loads(metrics_path.read_text(encoding="utf-8"))
+        auc = data.get("test_roc_auc")
         if auc is not None:
             out[seed] = float(auc)
     return out
